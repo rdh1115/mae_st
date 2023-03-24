@@ -18,7 +18,7 @@ class ModelTest(unittest.TestCase):
         print(model.patch_embed.patch_size)
         dataset_train = Kinetics(
             mode="pretrain",
-            path_to_data_dir='/Users/markbai/Documents/mae_st/data',
+            path_to_data_dir='/kaggle/input/kinetics-test/data',
         )
         sampler_train = torch.utils.data.RandomSampler(dataset_train)
         data_loader_train = torch.utils.data.DataLoader(
