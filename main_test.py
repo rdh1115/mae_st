@@ -13,7 +13,7 @@ import argparse
 import os
 
 import mae_st.models_vit as models_vit
-import mae_st.util.misc as misc
+import util.misc as misc
 
 import numpy as np
 import timm
@@ -21,10 +21,10 @@ import torch
 import torch.backends.cudnn as cudnn
 from iopath.common.file_io import g_pathmgr as pathmgr
 from mae_st.engine_test import test
-from mae_st.util.kinetics import Kinetics
-from mae_st.util.logging import master_print as print
-from mae_st.util.meters import TestMeter
-from mae_st.util.pos_embed import interpolate_pos_embed
+from util.kinetics import Kinetics
+from util.logging import master_print as print
+from util.meters import TestMeter
+from util.pos_embed import interpolate_pos_embed
 
 
 def get_args_parser():

@@ -7,7 +7,9 @@ import random
 
 import numpy as np
 import torch
+from fractions import Fraction
 import torchvision.io as io
+import ffmpeg
 
 
 def temporal_sampling(frames, start_idx, end_idx, num_samples):
@@ -70,17 +72,18 @@ def get_start_end_idx(video_size, clip_size, clip_idx, num_clips, use_offset=Fal
 
 
 def decode(
-    container,
-    sampling_rate,
-    num_frames,
-    clip_idx=-1,
-    num_clips=10,
-    video_meta=None,
-    target_fps=30,
-    max_spatial_scale=0,
-    use_offset=False,
-    rigid_decode_all_video=True,
-    modalities=("visual",),
+        fp,
+        container,
+        sampling_rate,
+        num_frames,
+        clip_idx=-1,
+        num_clips=10,
+        video_meta=None,
+        target_fps=30,
+        max_spatial_scale=0,
+        use_offset=False,
+        rigid_decode_all_video=True,
+        modalities=("visual",),
 ):
     """
     Decode the video and perform temporal sampling.
@@ -115,27 +118,68 @@ def decode(
         # The video_meta is empty, fetch the meta data from the raw video.
         if len(video_meta) == 0:
             # Tracking the meta info for selective decoding in the future.
-            meta = io._probe_video_from_memory(video_tensor)
+            try:
+                meta = io._probe_video_from_memory(video_tensor)
+                video_meta["video_timebase"] = meta.video_timebase
+                video_meta["video_numerator"] = meta.video_timebase.numerator
+                video_meta["video_denominator"] = meta.video_timebase.denominator
+                video_meta["has_video"] = meta.has_video
+                video_meta["video_duration"] = meta.video_duration
+                video_meta["video_fps"] = meta.video_fps
+                video_meta["audio_timebase"] = meta.audio_timebase
+                video_meta["audio_numerator"] = meta.audio_timebase.numerator
+                video_meta["audio_denominator"] = meta.audio_timebase.denominator
+                video_meta["has_audio"] = meta.has_audio
+                video_meta["audio_duration"] = meta.audio_duration
+                video_meta["audio_sample_rate"] = meta.audio_sample_rate
+            except Exception:
+                meta = ffmpeg.probe(fp)
+                print(meta)
+                has_audio = False
+                has_video = False
+                v_time_base = None
+                if len(meta['streams']) > 1:
+                    if meta['streams'][0]['codec_type'] == 'video' and meta['streams'][1]['codec_type'] == 'audio':
+                        print('yes')
+                        has_audio = True
+                        has_video = True
+                        time_base = meta['streams'][0]['time_base'].split('/')
+                        v_num, v_denom = int(time_base[0]), int(time_base[1])
+                        v_time_base = Fraction(v_num, v_denom)
+                        duration = meta['streams'][0]['duration']
+                        fps = meta['streams'][0]['avg_frame_rate'].split('/')
+                        fps = Fraction(int(fps[0]), int(fps[1]))
+                else:
+                    if meta['streams'][0]['codec_type'] == 'video':
+                        print('yes')
+                        has_video = True
+                        time_base = meta['streams'][0]['time_base'].split('/')
+                        v_num, v_denom = int(time_base[0]), int(time_base[1])
+                        v_time_base = Fraction(v_num, v_denom)
+                        duration = meta['streams'][0]['duration']
+                        fps = meta['streams'][0]['avg_frame_rate'].split('/')
+                        fps = Fraction(int(fps[0]), int(fps[1]))
+                video_meta["video_timebase"] = v_time_base
+                video_meta["video_numerator"] = v_num
+                video_meta["video_denominator"] = v_denom
+                video_meta["has_video"] = has_video
+                video_meta["video_duration"] = duration
+                video_meta["video_fps"] = fps
+                # video_meta["audio_timebas"] = meta.audio_timebase
+                # video_meta["audio_numerator"] = meta.audio_timebase.numerator
+                # video_meta["audio_denominator"] = meta.audio_timebase.denominator
+                # video_meta["has_audio"] = has_audio
+                # video_meta["audio_duration"] = meta.audio_duration
+                # video_meta["audio_sample_rate"] = meta.audio_sample_rate
+
             # Using the information from video_meta to perform selective decoding.
-            video_meta["video_timebase"] = meta.video_timebase
-            video_meta["video_numerator"] = meta.video_timebase.numerator
-            video_meta["video_denominator"] = meta.video_timebase.denominator
-            video_meta["has_video"] = meta.has_video
-            video_meta["video_duration"] = meta.video_duration
-            video_meta["video_fps"] = meta.video_fps
-            video_meta["audio_timebas"] = meta.audio_timebase
-            video_meta["audio_numerator"] = meta.audio_timebase.numerator
-            video_meta["audio_denominator"] = meta.audio_timebase.denominator
-            video_meta["has_audio"] = meta.has_audio
-            video_meta["audio_duration"] = meta.audio_duration
-            video_meta["audio_sample_rate"] = meta.audio_sample_rate
 
         fps = video_meta["video_fps"]
         if not rigid_decode_all_video:
             if (
-                video_meta["has_video"]
-                and video_meta["video_denominator"] > 0
-                and video_meta["video_duration"] > 0
+                    video_meta["has_video"]
+                    and video_meta["video_denominator"] > 0
+                    and video_meta["video_duration"] > 0
             ):
                 # try selective decoding.
                 decode_all_video = False

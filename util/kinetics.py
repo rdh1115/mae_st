@@ -9,7 +9,7 @@ import torch
 import torch.utils.data
 
 from iopath.common.file_io import g_pathmgr as pathmgr
-from mae_st.util.decoder.decoder import get_start_end_idx, temporal_sampling
+from util.decoder.decoder import get_start_end_idx, temporal_sampling
 from torchvision import transforms
 
 from .decoder import decoder as decoder, utils as utils, video_container as container
@@ -262,6 +262,7 @@ class Kinetics(torch.utils.data.Dataset):
 
             # Decode video. Meta info is used to perform selective decoding.
             frames, fps, decode_all_video = decoder.decode(
+                self._path_to_videos[index],
                 video_container,
                 sampling_rate,
                 self._num_frames,

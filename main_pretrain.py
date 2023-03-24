@@ -14,19 +14,19 @@ import json
 import os
 import time
 
-import mae_st.util.env
+import util.env
 
-import mae_st.util.misc as misc
+import util.misc as misc
 
 import numpy as np
 import timm
 import torch
 import torch.backends.cudnn as cudnn
 from iopath.common.file_io import g_pathmgr as pathmgr
-from mae_st import models_mae
-from mae_st.engine_pretrain import train_one_epoch
-from mae_st.util.kinetics import Kinetics
-from mae_st.util.misc import NativeScalerWithGradNormCount as NativeScaler
+import models_mae
+from engine_pretrain import train_one_epoch
+from util.kinetics import Kinetics
+from util.misc import NativeScalerWithGradNormCount as NativeScaler
 from tensorboard.compat.tensorflow_stub.io.gfile import register_filesystem
 from torch.utils.tensorboard import SummaryWriter
 

@@ -14,8 +14,8 @@ from functools import partial
 
 import torch
 import torch.nn as nn
-from mae_st.util import video_vit
-from mae_st.util.logging import master_print as print
+from util import video_vit
+from util.logging import master_print as print
 
 
 class MaskedAutoencoderViT(nn.Module):
@@ -257,6 +257,7 @@ class MaskedAutoencoderViT(nn.Module):
     def forward_encoder(self, x, mask_ratio):
         # embed patches
         x = self.patch_embed(x)
+        # [N, T, H*W, C]
         N, T, L, C = x.shape
 
         x = x.reshape(N, T * L, C)
@@ -298,6 +299,7 @@ class MaskedAutoencoderViT(nn.Module):
                 cls_ind = 1
             else:
                 cls_ind = 0
+            # [N, n_patches, embed_dim]
             pos_embed = self.pos_embed[:, cls_ind:, :].expand(x.shape[0], -1, -1)
             pos_embed = torch.gather(
                 pos_embed,
